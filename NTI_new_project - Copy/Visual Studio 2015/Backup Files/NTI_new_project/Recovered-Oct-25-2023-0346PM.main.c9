@@ -1,0 +1,388 @@
+#include "DIO.h"
+#include "Led.h"
+#include "Button.h"
+#include "Keypad.h"
+#include "seg.h"
+#include "LCD.h"
+#include "EX_Interrupt.h"
+#include "ADC.h"
+#include "sensors.h"
+
+#define F_CPU 16000000
+#include <util/delay.h>
+
+
+//ldr task
+int main(void)
+{
+	for(u8 i = 0;i<8;i++)
+		DIO_vSetPinMode(PB0+i,OUTPUT_HIGH);
+	
+	LCD_Init();	
+	ADC_Init();
+	u16 light ;
+	
+	//300  --> 0 leds
+	//20   --> 8 leds
+	
+	
+	while(1)
+	{
+		//LCD_goto(0,0);
+		
+		light=ADC_Read(CH_0);
+		//LCD_WriteNumber((s32)light);
+		//LCD_WriteString("   ");
+		if(light > )
+		
+		
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+static volatile u16 seg_counter=0;
+
+
+void seg_func(void)
+{
+	
+}
+
+void f1(void)
+{
+	LED_setmode(YELLOW_LED,HIGH);
+	_delay_ms(2000);
+	LED_setmode(YELLOW_LED,LOW);
+}
+
+
+/*projects:
+
+task 1:
+2*7 seg count using interrupt - 0 - 99
+initial value is 88
+one press -> 00
+2 presses -> 01
+
+ 
+ task 2:
+DC motor 2 directions with 1 button 
+
+ 
+ */
+
+
+//DC motor 2 directions with 1 button 
+static volatile u8 motor_state=0;
+void motor_func(void)
+{
+	motor_state^=1;
+}
+
+
+int main_task2_motor(void)
+{
+	//ex int 0 pin
+	DIO_vSetPinMode(PD2,INPUT_PULLUP);
+	
+	//motor pins 
+	DIO_vSetPinMode(PB3,OUTPUT_HIGH);
+	DIO_vSetPinMode(PB6,OUTPUT_HIGH);
+	DIO_vSetPinMode(PB5,OUTPUT_HIGH);
+	
+	LCD_Init();
+	EXI_Init();
+	EXI_TriggerEdge(EX_INT0,FALLING_EDGE);
+	EXI_Enable(EX_INT0);
+	GLOBAL_ENABLE();
+	EXI_SetCallBack(EX_INT0,motor_func);
+	
+	
+	
+	
+	while(1)
+	{
+		LCD_goto(0,0);
+		switch(motor_state)
+		{
+			case 0 : DIO_vSetPinMode(PB5,OUTPUT_HIGH); LCD_WriteString("direction : CW   ");break;
+			case 1 : DIO_vSetPinMode(PB5,OUTPUT_LOW);  LCD_WriteString("direction : CCW  ");break;
+		}
+		
+		
+	}
+	
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+static volatile u16 counter =0;
+
+
+void counter_func(void)
+{
+	counter++;
+}
+
+//main_task 1 : 7 seg one ex intterrupt counter
+int main_task1_counter_segment(void)
+{
+	DIO_vSetPinMode(PD2,INPUT_PULLUP);
+	seg_Init();
+	
+	/*LCD_Init();*/
+	EXI_Init();
+	EXI_TriggerEdge(EX_INT0,FALLING_EDGE);
+	EXI_Enable(EX_INT0);
+	GLOBAL_ENABLE();
+	EXI_SetCallBack(EX_INT0,counter_func);
+	
+	while(1)
+	{
+		seg_write(counter);
+	}
+}
+
+
+
+
+
+
+
+
+int main4 (void)
+{
+	LED_Init(GREEN_LED);
+	LED_Init(RED_LED);
+	LED_Init(YELLOW_LED);
+	
+	DIO_vSetPinMode(PA0,INPUT_NORMAL);
+	ADC_Init();
+	//Keypad_Init();
+    LCD_Init();
+	//seg_Init();
+	u8 key = NO_KEY;
+	//LCD_WriteString("ABdallah");
+ 	//LCD_WriteString_multiLine("Ya rab ne5las ya marwa ");
+	u16 temp = ADC_Read(CH_0);
+	u16 temp_high;
+	u16 temp_low;
+	
+    LCD_goto(0,0);
+    LCD_WriteString("temp : ");
+
+	while(1)
+	{
+		temp = Temp_Read_lm35();
+		temp_high=temp/10;
+		temp_low=temp%10;
+		
+		LCD_goto(0,7);
+		LCD_WriteNumber((s32)temp_high);
+		LCD_WriteChar('.');
+		LCD_WriteNumber((s32)temp_low);
+		LCD_WriteString("  c        ");
+		
+		if(temp < 20)
+		{
+			LED_setmode(GREEN_LED,HIGH);
+			LED_setmode(YELLOW_LED,LOW);
+			LED_setmode(RED_LED,LOW);
+		}
+		else if (temp<40)
+		{
+			LED_setmode(GREEN_LED,LOW);
+			LED_setmode(YELLOW_LED,HIGH);
+			LED_setmode(RED_LED,LOW);
+		}
+		else
+		{
+			LED_setmode(GREEN_LED,LOW);
+			LED_setmode(YELLOW_LED,LOW);
+			LED_setmode(RED_LED,HIGH);
+		}
+		
+		
+		
+		
+		
+		
+		//seg_write(1579);
+		/*
+		//seg_write(1923);
+		key=keypad_getkey();
+		if(key!=NO_KEY)
+		{
+			LCD_goto(0,0);
+			LCD_WriteChar(key);
+		}
+		*/
+	}
+}
+
+int main3 (void)
+{
+	EXI_Init();
+	EXI_TriggerEdge(EX_INT0,FALLING_EDGE);
+	EXI_SetCallBack(EX_INT0,f1);
+	
+	
+	LED_Init(BLUE_LED);
+	LED_Init(RED_LED);
+	LED_Init(YELLOW_LED);
+	
+	LED_setmode(BLUE_LED,LOW);
+	LED_setmode(RED_LED,LOW);
+	
+	EXI_Enable(EX_INT0);
+	GLOBAL_ENABLE();
+	
+	while(1)
+	{
+// 		LED_setmode(YELLOW_LED,HIGH);
+// 		_delay_ms(500);
+// 		LED_setmode(YELLOW_LED,LOW);
+// 		_delay_ms(500);
+		
+	}	
+	/*
+	LCD_Init();
+	///Keypad_Init();
+	LED_Init(RED_LED);
+	
+	//u8 key=NO_KEY;
+	LED_setmode(RED_LED,HIGH);
+	LCD_WriteChar('0');
+	LCD_WriteString("I am abdallah");
+	LCD_goto(1,5);
+	LCD_WriteNumber(99);
+	_delay_ms(1000);
+	LED_setmode(RED_LED,LOW);
+	while(1)
+	{
+		
+	}
+	/*
+	while(1)
+	{
+		key=keypad_getkey();
+		
+		if(key!=NO_KEY)
+		{
+			LCD_goto(0,0);
+			LCD_WriteChar(key);
+		}
+			
+	}
+	*/
+}
+
+
+
+
+
+
+
+int main2(void)
+{
+	Pushbutton_setup(pd_1);
+	Pushbutton_setup(pd_2);
+	Pushbutton_setup(pd_3);
+	Pushbutton_setup(pd_4);
+	LED_Init(RED_LED);
+	LED_Init(GREEN_LED);
+	LED_Init(BLUE_LED);
+	LED_Init(YELLOW_LED);
+	Keypad_Init();
+    while (1) 
+    {
+		u8 key =keypad_getkey();
+		if(key!=NO_KEY)
+		{
+			LED_setmode(YELLOW_LED,HIGH);
+			_delay_ms(500);
+			LED_setmode(YELLOW_LED,LOW);
+		}
+		/*for(int i=0;i<4;i++)
+		{
+			LED_setmode(i,HIGH);
+			_delay_ms(200);
+			LED_setmode(i,LOW);	
+		}
+		/*if(Pushbutton_state(pd_1)==PRESSED)
+		{
+			 LED_setmode(RED_LED,HIGH);
+		}
+		else
+		{
+			//_delay_ms(1000);
+			 LED_setmode(RED_LED,LOW);
+			// _delay_ms(1000);
+		}
+		
+		if(Pushbutton_state(pd_2)==NOTPRESSED)
+		{
+			LED_setmode(BLUE_LED,HIGH);
+		}
+		else
+		{
+			//_delay_ms(1000);
+			LED_setmode(BLUE_LED,LOW);
+			// _delay_ms(1000);
+		}*/
+			
+    }
+}
+
